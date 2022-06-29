@@ -7,29 +7,50 @@
 
 import UIKit
 
+enum HandlerType {
+    case create
+    case asyncUpdate
+}
+
 final class TableViewModel<U: CoreDataUseCase>: NSObject {
+    
     private var data: [U.Element] = []
     private let useCase: U
     var dataCount: Int {
         return data.count
     }
     
+    private var createHandler: ((U.Element) -> Void)?
+    private var asyncUpdateHandler: ((U.Element) -> Void)?
+    private var errorHandler: ((Error) -> Void)?
+    
     init(useCase: U) {
         self.useCase = useCase
     }
     
-    func create(data: U.Element,
-                completionHandler: ((U.Element) -> Void)? = nil,
-                errorHandler: ((Error) -> Void)? = nil) {
+    func changeHandler(type: HandlerType, handler: @escaping (U.Element) -> Void) {
+        switch type {
+        case .create:
+            createHandler = handler
+        case .asyncUpdate:
+            asyncUpdateHandler = handler
+        }
+    }
+    
+    func changeErrorHandler(handler: @escaping (Error) -> Void) {
+        errorHandler = handler
+    }
+    
+    func create(data: U.Element) {
         do {
             let result = try useCase.create(element: data)
-            completionHandler?(result)
+            createHandler?(result)
         } catch {
             errorHandler?(error)
         }
     }
     
-    func loadData(errorHandler: ((Error) -> Void)? = nil) {
+    func loadData() {
         do {
             let diaryDatas = try useCase.read()
             data = diaryDatas

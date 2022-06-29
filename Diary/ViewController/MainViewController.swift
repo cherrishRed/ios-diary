@@ -17,6 +17,9 @@ final class MainViewController: UIViewController {
     init(view: UITableView, viewModel: TableViewModel<DiaryUseCase>) {
         self.mainView = view
         self.viewModel = viewModel
+        viewModel.changeErrorHandler { error in
+            self.alertMaker.makeErrorAlert(error: error)
+        }
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -64,7 +67,21 @@ extension MainViewController {
     
     @objc
     private func rightBarbuttonClicked(_ sender: Any) {
-        viewModel.create(data: DiaryInfo(title: "", body: "", date: Date(), key: nil)) { data in
+        
+        viewModel.changeHandler(type: HandlerType.create) { data in
+            let detailViewController = DetailViewController(view: DetailView(), viewModel: self.viewModel)
+            self.viewModel.asyncUpdate(data: data) { diaryInfo in
+                detailViewController.updateNavigationImage(with: diaryInfo)
+            }  errorHandler: { error in
+                self.alertMaker.makeErrorAlert(error: error )
+            }
+            detailViewController.updateData(diary: data)
+            self.navigationController?.pushViewController(detailViewController, animated: true)
+        }
+        
+        viewModel.create(data: DiaryInfo(title: "", body: "", date: Date(), key: nil))
+                
+        /*{ data in
             let detailViewController = DetailViewController(view: DetailView(), viewModel: self.viewModel)
             self.viewModel.asyncUpdate(data: data) { diaryInfo in
                 detailViewController.updateNavigationImage(with: diaryInfo)
@@ -76,6 +93,7 @@ extension MainViewController {
         } errorHandler: { error in
             self.alertMaker.makeErrorAlert(error: error)
         }
+        */
     }
 }
 
@@ -144,3 +162,4 @@ extension MainViewController: UITableViewDataSource {
         return viewModel.dataCount
     }
 }
+
