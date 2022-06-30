@@ -91,4 +91,8 @@ final class MainViewCell: UITableViewCell {
         dateLabel.text = data.date?.toString ?? ""
         descriptionLabel.text = body
     }
+    
+    func exportDiaryBody() -> String {
+        return descriptionLabel.text ?? ""
+    }
 }

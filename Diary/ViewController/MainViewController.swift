@@ -14,6 +14,11 @@ final class MainViewController: UIViewController {
     private var mainView: UITableView
     private var viewModel: TableViewModel
     private weak var detailViewController: DetailViewController?
+    private var datas: [DiaryInfo] = [] {
+        didSet {
+            mainView.reloadData()
+        }
+    }
     
     init(view: UITableView, viewModel: TableViewModel) {
         self.mainView = view
@@ -34,13 +39,12 @@ final class MainViewController: UIViewController {
         super.viewDidLoad()
         setMainViewSetting()
         setNavigationSetting()
+        viewModel.delegate = self
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        viewModel.loadData()
-        mainView.reloadData()
-        viewModel.delegate = self
+        viewModel.requireAction(.loadData)
     }
     
     private func setMainViewSetting() {
@@ -64,34 +68,20 @@ extension MainViewController {
     
     @objc
     private func rightBarbuttonClicked(_ sender: Any) {
-        let newDiary = DiaryInfo(title: "", body: "", date: Date(), key: nil)
-        viewModel.create(data: newDiary)
-        
-        
-        
-        
-//        viewModel.create(data: DiaryInfo(title: "", body: "", date: Date(), key: nil)) { data in
-//            let detailViewController = DetailViewController(view: DetailView(), viewModel: self.viewModel)
-//            self.viewModel.asyncUpdate(data: data) { diaryInfo in
-//                detailViewController.updateNavigationImage(with: diaryInfo)
-//            }  errorHandler: { error in
-//                self.alertMaker.makeErrorAlert(error: error )
-//            }
-//            detailViewController.updateData(diary: data)
-//            self.navigationController?.pushViewController(detailViewController, animated: true)
-//        } errorHandler: { error in
-//            self.alertMaker.makeErrorAlert(error: error)
-//        }
+//        let newDiary = DiaryInfo(title: "", body: "", date: Date(), key: nil)
+        viewModel.requireAction(.create(newDiary))
     }
 }
 
 // MARK: tableView Delegate
 extension MainViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let detailViewController = DetailViewController(view: DetailView(), viewModel: viewModel)
-        guard let diary = viewModel.indexData(indexPath.row) else { return }
-        detailViewController.updateData(diary: diary)
-        navigationController?.pushViewController(detailViewController, animated: true)
+        viewModel.requireAction(.updateIndex(indexPath.row))
+//        let detailViewController = DetailViewController(view: DetailView(), viewModel: viewModel)
+//
+//        guard let diary = viewModel.indexData(indexPath.row) else { return }
+//        detailViewController.updateData(diary: diary)
+//        navigationController?.pushViewController(detailViewController, animated: true)
     }
     
     func tableView(_ tableView: UITableView,
@@ -99,9 +89,10 @@ extension MainViewController: UITableViewDelegate {
         let like = UIContextualAction(style: .normal, title: "Delete") { (_, _, success: @escaping (Bool) -> Void) in
             let cancleButton = UIAlertAction(title: "취소", style: .cancel)
             let deleteButton = UIAlertAction(title: "삭제", style: .destructive) { _ in
-                guard let diary = self.viewModel.indexData(indexPath.row) else { return }
-                self.viewModel.delete(data: diary)
-                self.viewModel.loadData()
+                self.viewModel.requireAction(.deleteIndex(indexPath.row))
+//                guard let diary = self.viewModel.indexData(indexPath.row) else { return }
+//                self.viewModel.delete(data: diary)
+//                self.viewModel.loadData()
                 tableView.deleteRows(at: [indexPath], with: .automatic)
             }
             self.alertMaker.makeAlert(title: "진짜요?",
@@ -112,9 +103,10 @@ extension MainViewController: UITableViewDelegate {
         
         like.backgroundColor = .systemPink
         let share = UIContextualAction(style: .normal, title: "Share") { (_, _, success: @escaping (Bool) -> Void) in
-            guard let diaryInfo = self.viewModel.indexData(indexPath.row) else { return }
+            guard let cell = tableView.cellForRow(at: indexPath) as? MainViewCell else { return }
+            
             let activityController = UIActivityViewController(
-                activityItems: [diaryInfo.body ?? ""],
+                activityItems: [cell.exportDiaryBody()],
                 applicationActivities: nil)
             self.present(activityController, animated: true)
             success(true)
@@ -127,6 +119,7 @@ extension MainViewController: UITableViewDelegate {
 
 extension MainViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
         guard let cell = tableView.dequeueReusableCell(
             withIdentifier: MainViewCell.identifier, for: indexPath
         ) as? MainViewCell else {
@@ -148,6 +141,8 @@ extension MainViewController: UITableViewDataSource {
 }
 
 extension MainViewController: TableViewModelDelegate {
+    
+    
     func asyncUpdateHandler(_ data: DiaryInfo) {
         guard let detailViewController = detailViewController else { return }
             detailViewController.updateNavigationImage(with: data)
@@ -156,10 +151,27 @@ extension MainViewController: TableViewModelDelegate {
     func createHandler(_ data: DiaryInfo) {
         let detailViewController = DetailViewController(view: DetailView(), viewModel: self.viewModel)
         self.detailViewController = detailViewController
+        
         self.viewModel.asyncUpdate(data: data)
         
         detailViewController.updateData(diary: data)
         self.navigationController?.pushViewController(detailViewController, animated: true)
+    }
+    
+    func updateHandler(_ data: DiaryInfo) {
+        let detailViewController = DetailViewController(view: DetailView(),
+                                                        viewModel: viewModel)
+        
+        detailViewController.updateData(diary: data)
+        navigationController?.pushViewController(detailViewController, animated: true)
+    }
+    
+    func updateCellHandler(_ cell: MainViewCell) {
+        cell.setDiaryData(diary)
+    }
+    
+    func deleteHandler(_ data: DiaryInfo) {
+        
     }
     
     func errorHandler(_ error: Error) {

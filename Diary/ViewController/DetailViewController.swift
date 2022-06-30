@@ -196,6 +196,22 @@ extension DetailViewController: SaveDelegate {
 }
 
 extension DetailViewController: TableViewModelDelegate {
+    func updateHandler(_ data: DiaryInfo) {
+        <#code#>
+    }
+    
+    func updateCellHandler(_ cell: MainViewCell) {
+        <#code#>
+    }
+    
+    func deleteHandler(_ data: DiaryInfo) {
+        <#code#>
+    }
+    
+    func reloadTableView(_ data: [DiaryInfo]) {
+        <#code#>
+    }
+    
     func asyncUpdateHandler(_ data: DiaryInfo) {
     }
     

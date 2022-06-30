@@ -18,6 +18,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let diaryUseCase = DiaryUseCase(containerManager: DiaryContainerManager.shared,
                                         weatherUseCase: weatherDataUseCase)
         let tableViewModel = TableViewModel(useCase: diaryUseCase)
+        
         let mainViewController = MainViewController(view: MainView(),
                                                     viewModel: tableViewModel)
         let navigationController = UINavigationController(rootViewController: mainViewController)
